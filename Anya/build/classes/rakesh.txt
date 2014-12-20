@@ -1,0 +1,18 @@
+SELECT c.person_id ,c.scoordinates
+  FROM students c
+  WHERE SDO_FILTER(c.scoordinates,
+    SDO_GEOMETRY(2003, NULL, NULL,
+      SDO_ELEM_INFO_ARRAY(1,1003,4),
+      SDO_ORDINATE_ARRAY(200,250,250,200,200,150))
+    ) = 'TRUE';
+
+
+SELECT 
+ c.person_id  FROM students c  WHERE SDO_NN(c.scoordinates,
+   sdo_geometry(2001, NULL, sdo_point_type(10,7,NULL), NULL,
+   NULL),  'sdo_num_res=1') = 'TRUE';
+
+12:49 AM 1/9/201412:49 AM 1/9/201412:49 AM 1/9/201412:49 AM 1/9/201412:49 AM 1/9/201412:49 AM 1/9/201412:49 AM 1/9/2014
+
+
+"SELECT c.scoordinates  FROM students c  WHERE SDO_NN(c.scoordinates,sdo_geometry(2001, NULL, sdo_point_type("+px+","+py+",NULL), NULL,NULL),  'sdo_num_res=1') = 'TRUE'"
