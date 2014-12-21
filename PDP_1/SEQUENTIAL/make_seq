@@ -1,0 +1,7 @@
+total: remove PDP1
+
+remove:
+	rm -f sequential
+
+PDP1: 
+	gcc -std=c99 PDP1Sequential.c -o sequential -lm

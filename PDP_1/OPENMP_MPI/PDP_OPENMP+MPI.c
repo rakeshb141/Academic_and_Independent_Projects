@@ -1,0 +1,175 @@
+#include "stdio.h"
+#include <math.h>
+#include <stdlib.h>
+#include "mpi.h"
+#include <sys/time.h>
+#include <stdint.h>
+#include "omp.h"
+
+int* calc_count_largest(int fr,int t,int thread);
+int no_of_threads=-1;
+int main(int argc, char *args[])
+{
+	if(argc!=3)
+	{
+		printf("Enter P : No_of_Processors N : Problem Size in the command line\n");  
+		return(0);
+	}
+	no_of_threads=atoi(args[1]);
+	double start,end;
+	int limit = atoi(args[2]);
+	//printf ("Problem Size = %d\n",limit);
+	int count=0,total_count=1;
+	int total_largest=2;
+	int largest=0;
+	int own_count;
+	int rank, size;
+	int len;
+	int* A;
+	char procname[MPI_MAX_PROCESSOR_NAME];
+	MPI_Init(&argc, &args);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Get_processor_name(procname, &len);
+	MPI_Status status;
+	int source,dest,i,j,k;
+        int from=1;
+	int to=0;
+	if(size!=1)
+	{
+	 int no_elements_to_send=(limit/(size-1));
+	// printf("size %d %d thread %d\n",size,no_elements_to_send,rank);
+	}
+	if(rank==0)
+	{
+	//	printf ("Problem Size = %d\n",limit);
+	//	printf("Rank %d\n",rank);
+		from=3;		
+		start=MPI_Wtime();
+		for(dest=1;dest<size;dest++)
+		{
+			if(dest==size-1)
+			{
+				to=limit;
+			}
+			else
+			{
+				if(dest==1)
+				{to=(limit/(size-1));}
+				else{ to=from+(limit/(size-1))-1;}
+				
+			}
+	//		printf("sending from to %d %d to %d \n",from,to,dest);
+			MPI_Send(&from, 1, MPI_INT, dest, 0, MPI_COMM_WORLD);
+			MPI_Send(&to, 1, MPI_INT, dest, 0, MPI_COMM_WORLD);
+
+			from=to+1;			
+
+		}
+		if(size==1)
+		{
+			to=limit;
+		}
+		if(from<to)
+		{
+			A=calc_count_largest(from,to,rank);
+		}
+		else
+		{
+		A=malloc(3*sizeof(int));
+		A[0]=0;A[1]=0;
+		}
+		if(total_largest<A[1])
+		{total_largest=A[1]; }
+		total_count+=A[0];
+	//	printf("Rank 0 initial_count %d from to %d %d largest %d\n",*(A+0),from,to,total_largest);
+		for(j=1;j<size;j++)
+		{
+			source=j;
+			MPI_Recv(A,2,MPI_INT,source,1,MPI_COMM_WORLD,&status);
+	//		printf("received count at master %d received largest %d\n",A[0],A[1]);
+			if(A[1]>total_largest)
+			{
+				total_largest=A[1];
+			}
+	//	printf("total_largest %d\n",total_largest);
+		total_count+=A[0];			
+//MPI_Recv(&largest,1,MPI_INT,source,1,MPI_COMM_WORLD,&status);
+		}
+	end=MPI_Wtime();
+	printf("Total Count is %d Largest Final %d\n",total_count,total_largest);
+	printf ("Time Taken = %f\n",end-start);
+	
+
+
+	}
+	else//other processes
+	{
+	//		printf("Thread in else %d \n",rank);	
+			source=0;
+			MPI_Recv(&from,1,MPI_INT,source,0,MPI_COMM_WORLD,&status);
+			MPI_Recv(&to,1,MPI_INT,source,0,MPI_COMM_WORLD,&status);
+			A=calc_count_largest(from,to,rank);
+	//		printf("from to %d %d own_count %d thread %d largest %d\n",from,to,A[0],rank,A[1]);
+
+			MPI_Send(A, 2, MPI_INT, 0, 1, MPI_COMM_WORLD);
+
+	//		printf("here \n\n");
+	
+
+	}
+	MPI_Finalize();
+	return(0);
+	
+}
+int* calc_count_largest(int fr,int t,int thread){
+	int count=0;
+	//int i,j;
+	int largest=0;
+//	printf("In the function with fr %d  t %d rank %d\n",fr,t,thread); 
+        if(fr%2==0)
+	{
+		fr=fr+1;
+
+	}
+	char proc[MPI_MAX_PROCESSOR_NAME];
+	int num; 
+	//printf("fr+1 %d\n",fr);
+	omp_set_num_threads(no_of_threads);
+	MPI_Get_processor_name(proc,&num);
+	#pragma omp parallel for shared(t) reduction(+:count) 	
+	for(int i=fr;i<=t;i=i+2)//every odd number till the limit
+	{
+		int flag=0;
+		int sqrt_i=sqrt(i);
+		for(int j=3;j<=sqrt_i;j=j+2)//check if divisible by any number from 3 to 
+		{
+//			printf("before division %d %d rank %d\n",i,j,thread);
+			if(i%j==0)
+			{
+		
+				flag=1;
+				break;
+			}
+
+		}
+       // printf("maximum threads %d ",omp_get_num_threads());
+		if(flag==0)
+		{
+			
+			count=count+1;
+	//		printf("%d thread %d rank %d %s\n",i,omp_get_thread_num(),thread,proc);
+                        #pragma omp critical
+			if(largest<i)
+			{
+			largest=i;
+			}
+		}
+}
+int *b;
+b=malloc(sizeof(int)*3);
+b[0]=count;
+b[1]=largest;
+//printf("returning for rank %d\n",thread);
+return b;
+}
