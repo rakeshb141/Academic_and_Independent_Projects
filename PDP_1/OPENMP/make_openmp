@@ -1,7 +1,0 @@
-total: remove PDP1
-
-remove:
-	rm -f openmp
-
-PDP1: 
-	gcc -std=c99 -fopenmp PDP1OPENMP.c -o openmp -lm

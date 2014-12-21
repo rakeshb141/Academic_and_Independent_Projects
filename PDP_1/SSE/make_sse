@@ -1,2 +1,0 @@
-In:     PDP1SSE.c
-	gcc -std=c99 -Wall -msse4.1 PDP1SSE.c -o sse -lm

@@ -1,2 +1,0 @@
-all: PDP1MP1.c
-	mpiicc PDP1MP1.c -o mpI

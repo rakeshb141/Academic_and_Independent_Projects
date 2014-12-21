@@ -1,2 +1,0 @@
-all:
-	mpiicc -std=c99 -fopenmp PDP_OPENMP+MPI.c -o plus -lm
